@@ -1,0 +1,127 @@
+# Node.js
+# Build a general Node.js project with npm.
+# Add steps that analyze code, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/javascript
+
+trigger:
+- master
+
+stages:
+- stage: Initial_Job
+  displayName: 'Code Pull'
+  jobs:
+  - job: 'Initial_Job'
+    steps:
+    - checkout: none
+
+
+
+########################################################################    
+- stage: Build
+  displayName: Application Build
+  jobs:
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: windows-latest
+
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '10.x'
+      displayName: 'Install Node.js'
+
+    - script: |
+        npm install 
+        npm install jasmine-node
+        npm run build --if-present
+        npm test
+      displayName: 'npm install and build'
+
+#####################################################################
+
+- stage: WhiteSource_Bolt
+  displayName: WhiteSource_Testing
+  dependsOn: Initial_Job
+  condition: succeeded()
+  jobs:
+  - job: 'Testing'
+    steps:
+       - task: WhiteSource@21
+         inputs:
+          cwd: '$(System.DefaultWorkingDirectory)'
+          projectName: 'Testing-Vynchronize'
+
+###############################################################################
+
+
+- stage: Archive
+  displayName: ArchiveFiles
+  jobs:
+  - job: Archive
+    displayName: Archive
+    steps:
+    - task: ArchiveFiles@2
+      inputs:
+          rootFolderOrFile: '$(system.defaultworkingdirectory)'
+          includeRootFolder: true
+          archiveType: 'zip'
+          archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+          replaceExistingArchive: true
+    - task: PublishBuildArtifacts@1
+      inputs:
+          PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+          ArtifactName: 'drop'
+          publishLocation: 'Container'
+
+#################################################################################
+
+- stage: Unit_Test
+  displayName: 'Run Unit Testing'
+  jobs:
+    - job: 
+      pool: 
+        vmImage: 'ubuntu-latest'
+      steps:
+      - script: 
+         npm install jasmine-node
+        
+      - task: Npm@1
+        inputs:
+          command: 'custom'
+          workingDir: '$(system.defaultworkingdirectory)'
+          customCommand: 'test'
+
+##########################################################################
+
+- stage: Deploy
+  displayName: Deploy stage
+  dependsOn: Unit_Test
+  condition: succeeded()
+  jobs:
+  - deployment: Deploy
+    displayName: Deploy
+    environment: Tx-testing
+    pool:
+      vmImage: windows-latest
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureRmWebAppDeployment@4
+            inputs:
+              ConnectionType: 'AzureRM'
+              azureSubscription: 'Pay-As-You-Go(2)(273566d6-3760-45b6-9d09-79b9fea4713f)'
+              appType: 'webApp'
+              WebAppName: 'testing-win'
+              deployToSlotOrASE: true
+              ResourceGroupName: 'Tx-Testing'
+              SlotName: 'production'
+              packageForLinux: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'
+              startUpCommand: 'npm run start'
+  
+        
+         
+      
+    
+    
