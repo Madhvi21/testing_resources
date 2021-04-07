@@ -87,7 +87,7 @@ stages:
 - stage: Unit_Test
   displayName: 'Run Unit Testing'
   jobs:
-    - template: node.yml@template
+    - template: test.yml@template
       parameters:
           customCommand: 'test'
        
