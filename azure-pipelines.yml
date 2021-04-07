@@ -87,7 +87,7 @@ stages:
 - stage: Unit_Test
   displayName: 'Run Unit Testing'
   jobs:
-    - template: test.yml@template
+    - template: azure-pipelines-1.yml@template
       parameters:
           customCommand: 'test'
        
