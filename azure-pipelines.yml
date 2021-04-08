@@ -19,24 +19,10 @@ resources:
         
 trigger:
 - main
-pool:
-   vmImage: ubuntu-latest
-
 stages:
-- stage: Unit_Test
-  
-  displayName: 'Run Unit Testing' 
-  jobs:
-    - job: Templatetesting
-      displayName: Testing
-      steps:
-        - template: testing.yml@template
-          parameters:
-            customCommand: 'test'
- ##############################################################################           
 - stage: Initial_Job
   displayName: 'Code Pull'
-  dependsOn: Unit_Test
+  
   jobs:
   - job: 'Initial_Job'
     steps:
@@ -101,7 +87,16 @@ stages:
           ArtifactName: 'drop'
           publishLocation: 'Container'
 ##################################################################
-
+- stage: Unit_Test
+  
+  displayName: 'Run Unit Testing' 
+  jobs:
+    - job: Templatetesting
+      displayName: Testing
+      steps:
+        - template: testing.yml@template
+          parameters:
+            customCommand: 'test'
       
     
       
